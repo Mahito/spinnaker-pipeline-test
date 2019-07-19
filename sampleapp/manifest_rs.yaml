@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  labels:
+    app: kanata
+  name: kanata
+  namespace: test
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      #parentPipelineStageId: ${ trigger.parentPipelineStageId }
+      parentPipelineStageId: ${ trigger.parentPipelineStageId }
+  template:
+    metadata:
+      labels:
+        parentPipelineStageId: ${ trigger.parentPipelineStageId }
+        cluster: for-kanata
+    spec:
+      containers:
+      - name: kanata
+        image: 'kanatakita/print-tag:${parameters["POD_VERSION"]}'
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          httpGet:
+            path: /healthz
+            port: 8080
+        livenessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          httpGet:
+            path: /healthz
+            port: 8080

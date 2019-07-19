@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test
+  namespace: test
+spec:
+  template:
+    spec:
+      serviceAccountName: test
+      containers:
+        - name: kanata-test
+          image: gcr.io/cloud-builders/kubectl
+          #image: debian:stable-slim
+          imagePullPolicy: Always
+          command: ["bash", "/mnt/test.sh"]
+          env:
+            - name: "Namespace"
+              value: "test"
+            - name: "Ingress"
+              value: "kanata-ingress"
+            - name: "ProdFQDN"
+              value: "kanata.local"
+            - name: "TestFQDN"
+              value: "test-kanata.local"
+            - name: "Expect_NumberOfPod"
+              value: "3"
+            - name: "Expect_PodVersion"
+              value: "v000"
+            - name: "Expect_Response"
+              value: "v1"
+          volumeMounts:
+            - mountPath: /mnt/test.sh
+              name: script
+              subPath: "test.sh"
+      volumes:
+        - name: script
+          configMap:
+            name: script
+      restartPolicy: Never
