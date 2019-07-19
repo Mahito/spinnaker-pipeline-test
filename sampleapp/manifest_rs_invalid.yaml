@@ -10,11 +10,11 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      parentPipelineStageId: ${ trigger.parentPipelineStageId }
+      eventId: ${ trigger.eventId }
   template:
     metadata:
       labels:
-        parentPipelineStageId: ${ trigger.parentPipelineStageId }
+        eventId: ${ trigger.eventId }
         cluster: for-kanata
 aaaaa
     spec:

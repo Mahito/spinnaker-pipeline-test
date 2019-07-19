@@ -14,7 +14,7 @@ aaa
       protocol: TCP
       targetPort: 80
   selector:
-    parentPipelineStageId: ${ trigger.parentPipelineStageId }
+    eventId: ${ trigger.eventId }
 
 ---
 apiVersion: v1
