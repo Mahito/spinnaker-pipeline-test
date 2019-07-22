@@ -7,12 +7,21 @@ spec:
   template:
     spec:
       serviceAccountName: test
+      volumes:
+        - name: script
+          configMap:
+            name: script
+      restartPolicy: Never
       containers:
         - name: kanata-test
           image: gcr.io/cloud-builders/kubectl
           #image: debian:stable-slim
           imagePullPolicy: Always
           command: ["bash", "/mnt/test.sh"]
+          volumeMounts:
+            - mountPath: /mnt/test.sh
+              name: script
+              subPath: "test.sh"
           env:
             - name: "Namespace"
               value: "test"
@@ -28,12 +37,3 @@ spec:
               value: "v000"
             - name: "Expect_Response"
               value: "v1"
-          volumeMounts:
-            - mountPath: /mnt/test.sh
-              name: script
-              subPath: "test.sh"
-      volumes:
-        - name: script
-          configMap:
-            name: script
-      restartPolicy: Never
