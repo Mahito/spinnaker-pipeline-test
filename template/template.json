@@ -1,0 +1,723 @@
+{
+  "appConfig": {},
+  "expectedArtifacts": [],
+  "keepWaitingPipelines": true,
+  "limitConcurrent": true,
+  "parameterConfig": [],
+  "roles": [
+    "gcp-adminpod-sre"
+  ],
+  "stages": [
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": false,
+      "failPipeline": true,
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Svc for first",
+      "refId": "1",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "3"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_RS}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "RS for first",
+      "refId": "2",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "1"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": true,
+        "options": {
+          "enableTraffic": false,
+          "namespace": "${NAMESPACE}",
+          "services": [
+            "service ${SERVICE_NAME}"
+          ]
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "name": "First Deploy",
+      "preconditions": [
+        {
+          "cloudProvider": "kubernetes",
+          "context": {
+            "cluster": "replicaSet ${APPLICATION}",
+            "comparison": "==",
+            "credentials": "${PROVIDER}",
+            "expected": 0,
+            "moniker": {
+              "app": "${APPLICATION}",
+              "cluster": "replicaSet ${APPLICATION}"
+            },
+            "regions": [
+              "${NAMESPACE}"
+            ]
+          },
+          "failPipeline": false,
+          "type": "clusterSize"
+        }
+      ],
+      "refId": "3",
+      "requisiteStageRefIds": [],
+      "type": "checkPreconditions"
+    },
+    {
+      "name": "Second or later Deploy",
+      "preconditions": [
+        {
+          "cloudProvider": "kubernetes",
+          "context": {
+            "cluster": "replicaSet ${APPLICATION}",
+            "comparison": ">=",
+            "credentials": "${PROVIDER}",
+            "expected": 1,
+            "moniker": {
+              "app": "${APPLICATION}",
+              "cluster": "replicaSet ${APPLICATION}"
+            },
+            "regions": [
+              "${NAMESPACE}"
+            ]
+          },
+          "failPipeline": false,
+          "type": "clusterSize"
+        }
+      ],
+      "refId": "4",
+      "requisiteStageRefIds": [],
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "cluster": "replicaSet ${APPLICATION}",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "criteria": "newest",
+      "failPipeline": false,
+      "kind": "replicaSet",
+      "location": "${NAMESPACE}",
+      "mode": "dynamic",
+      "name": "Enable RS for first",
+      "refId": "6",
+      "requisiteStageRefIds": [
+        "2"
+      ],
+      "stageTimeoutMs": 300000,
+      "type": "enableManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_ING}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Ingress for first",
+      "refId": "7",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "6"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "name": "Wait for GCP Healthcheck",
+      "refId": "9",
+      "requisiteStageRefIds": [
+        "7"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage(\"Svc for first\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"RS for first\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"Ingress for first\")[\"status\"].toString() == \"SUCCEEDED\"}",
+        "type": "expression"
+      },
+      "type": "wait",
+      "waitTime": 600
+    },
+    {
+      "name": "OK",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${#stage(\"Test (First Deploy)\")[\"status\"].toString() == \"SUCCEEDED\"}"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "11",
+      "requisiteStageRefIds": [
+        "44"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "name": "NG",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${#stage(\"Test (First Deploy)\")[\"status\"].toString() != \"SUCCEEDED\"}"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "12",
+      "requisiteStageRefIds": [
+        "44"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "name": "Finish (OK)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${ true }"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        }
+      ],
+      "refId": "13",
+      "requisiteStageRefIds": [
+        "47"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "name": "Finish (NG)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${ false }"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        }
+      ],
+      "refId": "14",
+      "requisiteStageRefIds": [
+        "46"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_ING}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Ingress",
+      "refId": "23",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "39"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "name": "OK",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${#stage(\"Test (Second or Later Deploy)\")[\"status\"].toString() == \"SUCCEEDED\"}"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "28",
+      "requisiteStageRefIds": [
+        "45"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "name": "NG",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${#stage(\"Test (Second or Later Deploy)\")[\"status\"].toString() != \"SUCCEEDED\"}"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "29",
+      "requisiteStageRefIds": [
+        "45"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "cluster": "replicaSet ${APPLICATION}",
+      "criteria": "newest",
+      "kind": "replicaSet",
+      "location": "${NAMESPACE}",
+      "mode": "dynamic",
+      "name": "Enable RS",
+      "refId": "30",
+      "requisiteStageRefIds": [
+        "28"
+      ],
+      "stageTimeoutMs": 300000,
+      "type": "enableManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "cluster": "replicaSet ${APPLICATION}",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": false,
+      "criteria": "second_newest",
+      "failPipeline": true,
+      "kind": "replicaSet",
+      "location": "${NAMESPACE}",
+      "mode": "dynamic",
+      "name": "Delete RS",
+      "options": {
+        "cascading": true
+      },
+      "refId": "31",
+      "requisiteStageRefIds": [
+        "30"
+      ],
+      "type": "deleteManifest"
+    },
+    {
+      "name": "Finish (OK)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${true}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        }
+      ],
+      "refId": "32",
+      "requisiteStageRefIds": [
+        "49"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "name": "Clustersize gt 1",
+      "preconditions": [
+        {
+          "cloudProvider": "kubernetes",
+          "context": {
+            "cluster": "replicaSet ${APPLICATION}",
+            "comparison": ">",
+            "credentials": "${PROVIDER}",
+            "expected": 1,
+            "moniker": {
+              "app": "${APPLICATION}",
+              "cluster": "replicaSet ${APPLICATION}"
+            },
+            "regions": [
+              "${NAMESPACE}"
+            ]
+          },
+          "failPipeline": false,
+          "type": "clusterSize"
+        }
+      ],
+      "refId": "33",
+      "requisiteStageRefIds": [
+        "29"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "cluster": "replicaSet ${APPLICATION}",
+      "criteria": "newest",
+      "kind": "replicaSet",
+      "location": "${NAMESPACE}",
+      "mode": "dynamic",
+      "name": "Delete RS",
+      "options": {
+        "cascading": true
+      },
+      "refId": "34",
+      "requisiteStageRefIds": [
+        "33"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage(\"Clustersize gt 1\")[\"status\"].toString() == \"SUCCEEDED\"}",
+        "type": "expression"
+      },
+      "type": "deleteManifest"
+    },
+    {
+      "name": "Finish (NG)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${ false }"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        }
+      ],
+      "refId": "35",
+      "requisiteStageRefIds": [
+        "48"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "location": "${NAMESPACE}",
+      "manifestName": "ingress ${INGRESS_NAME}",
+      "mode": "static",
+      "name": "Delete Ingress",
+      "options": {
+        "cascading": true
+      },
+      "refId": "36",
+      "requisiteStageRefIds": [
+        "12"
+      ],
+      "type": "deleteManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "app": "${APPLICATION}",
+      "cloudProvider": "kubernetes",
+      "cluster": "replicaSet ${APPLICATION}",
+      "criteria": "newest",
+      "kind": "replicaSet",
+      "location": "${NAMESPACE}",
+      "mode": "dynamic",
+      "name": "Delete RS",
+      "options": {
+        "cascading": true
+      },
+      "refId": "37",
+      "requisiteStageRefIds": [
+        "36"
+      ],
+      "type": "deleteManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Svc",
+      "refId": "38",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "4"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_RS}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "RS",
+      "refId": "39",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "38"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 300000,
+      "trafficManagement": {
+        "enabled": true,
+        "options": {
+          "enableTraffic": false,
+          "namespace": "${NAMESPACE}",
+          "services": [
+            "service ${SERVICE_NAME}"
+          ]
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "isNew": true,
+      "name": "Test (First Deploy)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${ true }"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "44",
+      "requisiteStageRefIds": [
+        "9"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage(\"Svc for first\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"RS for first\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"Ingress for first\")[\"status\"].toString() == \"SUCCEEDED\"}",
+        "type": "expression"
+      },
+      "type": "checkPreconditions"
+    },
+    {
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "isNew": true,
+      "name": "Test (Second or Later Deploy)",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${true}"
+          },
+          "failPipeline": false,
+          "type": "expression"
+        }
+      ],
+      "refId": "45",
+      "requisiteStageRefIds": [
+        "23"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage(\"Svc\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"RS\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"Ingress\")[\"status\"].toString() == \"SUCCEEDED\" }",
+        "type": "expression"
+      },
+      "type": "checkPreconditions"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_SVC_DUMMY}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Override Svc for test",
+      "refId": "46",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "37"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_SVC_DUMMY}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Override Svc for test",
+      "refId": "47",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "11"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_SVC_DUMMY}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Override Svc for test",
+      "refId": "48",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "34",
+        "33"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 3000000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    },
+    {
+      "account": "${PROVIDER}",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "spinnaker-artifact-account",
+      "manifestArtifactId": "${MANIFEST_SVC_DUMMY}",
+      "moniker": {
+        "app": "${APPLICATION}"
+      },
+      "name": "Override Svc for test",
+      "refId": "49",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [
+        "31"
+      ],
+      "skipExpressionEvaluation": false,
+      "source": "artifact",
+      "stageTimeoutMs": 3000000,
+      "trafficManagement": {
+        "enabled": false,
+        "options": {
+          "enableTraffic": false,
+          "services": []
+        }
+      },
+      "type": "deployManifest"
+    }
+  ],
+  "triggers": []
+}
