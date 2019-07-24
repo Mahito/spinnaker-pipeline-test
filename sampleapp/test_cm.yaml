@@ -59,7 +59,7 @@ data:
 
     : "test 4" ; true && {
       TARGET=$(kubectl get ingress -n $Namespace $Ingress -o go-template='{{ $ingress := index .status.loadBalancer.ingress 0 }}{{ $ingress.ip }}')
-      Actual_Response=$(curl --header "HOST:$ProdFQDN" $TARGET 2> /dev/null)
+      Actual_Response=$(curl --header "HOST:$FQDN" $TARGET 2> /dev/null)
       assert_equal $Expect_Response $Actual_Response
     }
 
