@@ -177,7 +177,7 @@
       "type": "deployManifest"
     },
     {
-      "name": "Wait for GCP Healthcheck",
+      "name": "Wait",
       "refId": "9",
       "requisiteStageRefIds": [
         "7"
@@ -595,7 +595,7 @@
       ],
       "refId": "45",
       "requisiteStageRefIds": [
-        "23"
+        "50"
       ],
       "stageEnabled": {
         "expression": "${#stage(\"Svc\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"RS\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"Ingress\")[\"status\"].toString() == \"SUCCEEDED\" }",
@@ -717,6 +717,20 @@
         }
       },
       "type": "deployManifest"
+    },
+    {
+      "isNew": true,
+      "name": "Wait",
+      "refId": "50",
+      "requisiteStageRefIds": [
+        "23"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage(\"Svc\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"RS\")[\"status\"].toString() == \"SUCCEEDED\" && #stage(\"Ingress\")[\"status\"].toString() == \"SUCCEEDED\"}",
+        "type": "expression"
+      },
+      "type": "wait",
+      "waitTime": 300
     }
   ],
   "triggers": []
