@@ -8,6 +8,14 @@ spec: {}
 status: {}
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: test-svcerr
+spec: {}
+status: {}
+---
+apiVersion: v1
 data:
   check_response.sh: |+
     #!/bin/bash
