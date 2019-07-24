@@ -13,7 +13,7 @@ spec:
       volumes:
         - name: script
           configMap:
-            name: script
+            name: script-sampleapp
       restartPolicy: Never
       containers:
         - name: kanata-test
@@ -32,11 +32,5 @@ spec:
               value: "kanata-ingress"
             - name: "ProdFQDN"
               value: "kanata.local"
-            - name: "TestFQDN"
-              value: "test-kanata.local"
-            - name: "Expect_NumberOfPod"
-              value: "3"
-            - name: "Expect_PodVersion"
-              value: "v000"
             - name: "Expect_Response"
-              value: "v1"
+              value: "${parameters.POD_VERSION}"

@@ -2,7 +2,8 @@
 
 * generate manifest.yaml
 ```
-cat <(echo ---) <(kubectl create configmap script --from-file test.sh --dry-run -o yaml) <(echo ---) <(cat << '_EOF_'
+cat <(echo ---) <(kubectl create namespace test --dry-run -o yaml) <(echo ---) <(kubectl -n test create configmap script --from-file test.sh --from-file check_response.sh --dry-run -o yaml) <(cat << '_EOF_'
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:

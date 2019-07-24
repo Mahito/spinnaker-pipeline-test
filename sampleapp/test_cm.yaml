@@ -1,13 +1,5 @@
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  creationTimestamp: null
-  name: test
-spec: {}
-status: {}
----
-apiVersion: v1
 data:
   check_response.sh: |+
     #!/bin/bash
@@ -49,17 +41,17 @@ data:
       fi
     }
 
-    : "test 1" ; true && {
+    : "test 1" ; false && {
       Actual_NumberOfRS=$(kubectl get rs -n $Namespace -o go-template='{{ len .items }}')
       assert_equal $Actual_NumberOfRS 1
     }
 
-    : "test 2" ; true && {
+    : "test 2" ; false && {
       Actual_NumberOfPod=$(kubectl get rs -n $Namespace -o go-template='{{ $rs := index .items 0 }}{{ $rs.spec.replicas }}')
       assert_equal $Actual_NumberOfPod $Expect_NumberOfPod
     }
 
-    : "test 3" ; true && {
+    : "test 3" ; false && {
       # MEMO: NG: kubectl get replicasets -n $Namespace -o go-template='{{ $rs := index .items 0 }}{{ $rs.metadata.annotations.artifact.spinnaker.io/version }}'
       Actual_PodVersion=$(kubectl get replicasets -n $Namespace -o go-template='{{ $rs := index .items 0 }}{{ $rs.metadata.name }}' | awk -F'-' '{ print $NF }')
       assert_equal $Expect_PodVersion $Actual_PodVersion
@@ -75,27 +67,5 @@ data:
 kind: ConfigMap
 metadata:
   creationTimestamp: null
-  name: script
-  namespace: test
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: test
-  namespace: test
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: test
-  labels:
-    kubernetes.io/cluster-service: "true"
-    addonmanager.kubernetes.io/mode: Reconcile
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: ServiceAccount
-  name: test
+  name: script-sampleapp
   namespace: test

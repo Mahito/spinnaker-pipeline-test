@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kanata-test
+  namespace: default
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    parentPipelineStageId: ${ trigger.parentPipelineStageId }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kanata
+  namespace: default
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    dummy: dummy
+
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: monitoring-gui-backend-config
+  namespace: lab2alfa-app-monitoring
+spec:
+  securityPolicy:
+    name: kanata
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kanata-job
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - name: hello-container
+          image: kanatakita/hello-container:latest
+          imagePullPolicy: Always
+      restartPolicy: Never
+
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: kanata-cronjob
+  namespace: default
+spec:
+  schedule: "00 */1 * * *"
+  concurrencyPolicy: Replace
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: hello-container
+              image: kanatakita/hello-container:latest
+              imagePullPolicy: Always
+          restartPolicy: OnFailure
+
